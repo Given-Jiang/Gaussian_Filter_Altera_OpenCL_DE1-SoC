@@ -1,0 +1,48 @@
+#define ROWS 1078
+#define COLS 1920
+#define CHANNELS 1
+
+
+__kernel
+__attribute__((task))
+void Gaussian(__global uchar* restrict in_img, __global uchar* restrict out_img, 
+		const unsigned int iterations)
+{
+    unsigned int count = 0;
+
+    // Filter coefficients
+	 float pdKernel[5][5] = {{0.0050f,0.0173f,0.0262f,0.0173f,0.0050f},
+							{0.0173f,0.0598f,0.0903f,0.0598f,0.0173f},
+							{0.0262f,0.0903f,0.1366f,0.0903f,0.0262f},
+							{0.0173f,0.0598f,0.0903f,0.0598f,0.0173f},
+							{0.0050f,0.0173f,0.0262f,0.0173f,0.0050f}};
+
+	uchar rows[4 * COLS + 5];
+
+    while(count != iterations)
+    {
+		#pragma unroll
+		for (int i = COLS * 4 + 4; i > 0; --i)
+		{
+			rows[i] = rows[i - 1];
+		}
+		rows[0] = in_img[count];
+	
+		float dir = 0;
+	
+		#pragma unroll
+		for (int i = 0; i < 5; ++i)
+		{
+			#pragma unroll
+			for (int j = 0; j < 5; ++j)
+			{
+				uchar pixel = rows[i * COLS + j];
+				dir += pixel * pdKernel[i][j];
+			}
+		}
+		out_img[count++] = (uchar) dir;
+	}
+
+}
+
+
